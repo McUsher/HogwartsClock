@@ -43,11 +43,12 @@ class TextHandler():
             use = font.Font(os.path.join(self.fontpath, "spleen-16x32_mod.bdf"),32)
             logging.critical("Font not found: {}".format(name))
         logging.info("Font set to: {}".format(use))
-        
         return use
+
     def __setRecheck(self):
-        threading.Timer(config.CHECK_FILE_SECONDS, self.__check).start()
-    
+        thread = threading.Timer(config.CHECK_FILE_SECONDS, self.__check)
+        thread.setDaemon(True)
+        thread.start()
     
     def __check(self):
         modified = time.ctime(os.path.getmtime(self.file))
@@ -71,11 +72,9 @@ class TextHandler():
             if("showFPS" in vals):
                 self.showFPS = vals["showFPS"] == 1
                 self.fontFPS = font.Font(os.path.join(self.fontpath,"spleen-5x8.bdf"), 8)
-            logging.getLogger().setLevel(int(vals["loglevel"]))
-            logging.critical("LogLevel set to {}, showFPS={}".format(int(vals["loglevel"]), self.showFPS))
-
+            logging.getLogger().setLevel(vals["loglevel"])
+            logging.critical("LogLevel set to {}, showFPS={}".format(vals["loglevel"], self.showFPS))
             logging.info("new text config={}".format(self.displayString))
-            logging.info(self.aniprops)
         except Exception as e:
             logging.critical("Could not read config file {} - setting defaults".format(self.file))
             logging.critical("Exeption was: {}".format(e))

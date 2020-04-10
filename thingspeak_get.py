@@ -1,6 +1,7 @@
 import thingspeak
 import threading
 
+DEBUG_TEMP = 88
 
 class ThingSpeakRetriever():
     """
@@ -22,7 +23,7 @@ class ThingSpeakRetriever():
     def __update(self):
         try:
             if(self.updateTimeSeconds <= 0):
-                self.__setTemp(88 if self.updateTimeSeconds == -60 else None)
+                self.__setTemp(DEBUG_TEMP if self.updateTimeSeconds == -60 else None)
                 return
             
             """ first check, if the data is recent...."""
@@ -50,7 +51,9 @@ class ThingSpeakRetriever():
             
     def __setUpdateTemperature(self):
         if(self.updateTimeSeconds > 0):
-            threading.Timer(self.updateTimeSeconds, self.__update).start()
+            thread = threading.Timer(self.updateTimeSeconds, self.__update)
+            thread.setDaemon(True)
+            thread.start()
 
     def __setTemp(self, temperature, errorCode=0):
         if(errorCode > 0):

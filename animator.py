@@ -26,6 +26,7 @@ class AniProps:
         self.speed = 1
         self.fps = 1
         self.wait = 1
+        self.updated = False
         
     def setDefault(self):
         self.__setDefaults__()
@@ -39,19 +40,19 @@ class AniProps:
         self.speed = data["speed"]
         self.fps = data["fps"]
         self.wait = data["wait"]
-        
-        
+        self.updated = True
+        logging.info(f"Update: {self}")
 
     def __str__(self):
-        return f"AniProps(typ={self.typ}, speed={self.speed}, fps={self.fps})"
+        return f"AniProps(typ={self.typ}, speed={self.speed}, fps={self.fps}, wait={self.wait})"
 
 class Animation:
 
-    def __init__(self, screen):
+    def __init__(self, screen, aniprops):
         self.screen = screen
 
         self.done = True
-        self.aniprops = None
+        self.aniprops = aniprops
 
         self.text = None
         self.textRect = None
@@ -66,9 +67,6 @@ class Animation:
         self.textRect = text.get_rect()
         self.center_text()
 
-    def updateAniProps(self, aniprops):
-        self.aniprops = aniprops
-        
     def get_fps(self):
         return self.aniprops.fps
     
@@ -81,8 +79,8 @@ class Animation:
 
 class StillAni(Animation):
     
-    def __init__(self, screen):
-        super().__init__(screen)
+    def __init__(self, screen, aniprops):
+        super().__init__(screen, aniprops)
         
     def update(self):
         self.screen.blit(self.text, self.textRect)                 #show text
@@ -96,8 +94,8 @@ class StillAni(Animation):
 
 class RunningAni(Animation):
 
-    def __init__(self, screen):
-        super().__init__(screen)
+    def __init__(self, screen, aniprops):
+        super().__init__(screen, aniprops)
     
     def update(self):
         self.textRect.x -=self.aniprops.speed
@@ -111,22 +109,23 @@ class RunningAni(Animation):
 
 class ExplodeAni(Animation):
     
-    def __init__(self, screen):
-        super().__init__(screen)
+    def __init__(self, screen, aniprops, ref):
+        super().__init__(screen, aniprops)
+        self.ref = Vector(ref)
         self.stillTime = 2
         self.wait_until = 0
         self.fac_gen = FactorGenerator()
-        
-    def updateAniProps(self, aniprops):
-        super().updateAniProps(aniprops)
-        self.steps =  self.fac_gen.get(time=self.aniprops.speed, fps=self.aniprops.fps)
+        self.__update_steps()
         
     def start(self, text):
         super().start(text)
+        if(self.aniprops.updated):
+            self.aniprops.updated = False
+            self.__update_steps()
         t = Timelog("1")
         self.pixels = []
         #analyse the text
-        ref = Vector(self.clock_rect.centerx,self.clock_rect.centery)
+        ref = self.ref if self.ref else Vector(self.clock_rect.centerx,self.clock_rect.centery)
         first = True
         for x in range(self.textRect.width):
             for y in range(self.textRect.height):
@@ -134,7 +133,7 @@ class ExplodeAni(Animation):
                 if(v == white):
                     self.pixels.append(Pix(self.textRect.x+x, self.textRect.y+y, ref, first))
                     first = False
-        t.out("done analyse")
+        t.out(f"done analyse, pixelcount={len(self.pixels)}")
         self.step = -1
         self.done = False
         #print(f"first=",self.pixels[0])
@@ -144,46 +143,51 @@ class ExplodeAni(Animation):
         if(self.step < len(self.steps)):
             super().clear()
             fac = self.steps[self.step]
+            facAbs = abs(fac)          # abs here saves time at the vector calculations!
             #self.info=f"{round(fac,2)}"
-            self.drawWithFac(fac)
+            for p in self.pixels:
+                self.screen.set_at(p.out(fac, facAbs), white)
             self.wait_until = time.time() + self.aniprops.wait
-             
         else:
             # sit and wait...
             self.done = self.wait_until < time.time()
 
-    def drawWithFac(self, fac):
-        #ref = self.pixels[0].refC()
-        #draw.circle(self.screen, white, ref, max(1, int(80*self.steps[self.step])), 1)
-        for p in self.pixels:
-            out = p.out(fac)
-            self.screen.set_at(out, white)
+    def __update_steps(self):
+        self.steps =  self.fac_gen.get(time=self.aniprops.speed, fps=self.aniprops.fps)
+        
 class Pix:
+    """
+    BE CAREFUL this is a very CPU intensive Task, espiacially on an Raspberry Pi Zero
+    Know what you do in this class!!!!
+    """
     def __init__(self, orgX, orgY, ref, debug):
-        self.orgPos = Vector(orgX, orgY)
-        self.ref = ref
-        self.vec = self.orgPos - ref
-        self.speedGrow = random.random()*0.5
-        self.speedShrink = 0.2+random.random()*0.5
+        self.orgX = orgX
+        self.orgY = orgY
+        vecX = orgX - ref.x
+        vecY = orgY - ref.y
+        speedGrow   = 0.0 + random.random()*0.9
+        speedShrink = 0.6 + random.random()*0.4
+        self.growX = vecX * speedGrow
+        self.growY = vecY * speedGrow
+        self.shrinkX = vecX * speedShrink
+        self.shrinkY = vecY * speedShrink
         self.debug = debug
         
     def debug(self, text):
         if(self.debug):
             print(text)
     
-    def out(self, fac):
-        if(fac >= 0):
-            pos = self.orgPos + self.vec * fac * self.speedGrow
+    def out(self, fac, facAbs):
+        if(fac < 0):
+            return (int(self.orgX - self.shrinkX * facAbs),
+                    int(self.orgY - self.shrinkY * facAbs))
         else:
-            pos = self.orgPos - self.vec * abs(fac) * self.speedShrink
-        return (int(pos.x), int(pos.y))
-    
-    def refC(self):
-        return (int(self.ref.x), int(self.ref.y))
+            return (int(self.orgX + self.growX * fac),
+                    int(self.orgY + self.growY * fac))
     
     def __str__(self):
         deb = 'DEB' if self.debug else '-'
-        return f"Vector(org={self.orgPos},ref={self.ref} vec={self.vec} {deb})"
+        return f"Vector(org={self.orgX}/{self.orgY} {deb})"
     
 class FactorGenerator():
     def __init__(self):

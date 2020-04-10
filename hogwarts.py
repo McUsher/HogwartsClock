@@ -1,6 +1,6 @@
 #do the logging
 import logging
-fmt_str = '[%(asctime)s] %(levelname)s @ line %(lineno)d: %(message)s'
+fmt_str = '[%(asctime)s] %(levelname)s | %(filename)s @ line %(lineno)d: %(message)s'
 logging.basicConfig(level=logging.DEBUG, format=fmt_str)
 
 import os
@@ -50,17 +50,17 @@ def main():
     global running
     running = True
     while running:
+        handleEvents()
         if not animation or animation.done:
             text = textHandler.render()
             if not animations:
                 animations = {
-                    TYPE_STILL:     StillAni(screen),
-                    TYPE_RUN:       RunningAni(screen),
-                    TYPE_EXPLODE:   ExplodeAni(screen),
+                    TYPE_STILL:     StillAni(screen, textHandler.aniprops),
+                    TYPE_RUN:       RunningAni(screen, textHandler.aniprops),
+                    TYPE_EXPLODE:   ExplodeAni(screen, textHandler.aniprops, config.REF_EXPLODE),
                 }
             animation = animations.get(textHandler.aniprops.typ)
             animation.clock_rect = clock_rect
-            animation.updateAniProps(textHandler.aniprops)
             animation.start(text)
                 
                 
@@ -79,9 +79,7 @@ def main():
             fpsRect.y = config.GEO_HEIGHT - fpsRect.height
             screen.blit(fpsText, fpsRect)
         
-        handleEvents()
         pygame.display.update(clock_rect)
-
         
 def handleEvents():
     global pygame
@@ -91,8 +89,34 @@ def handleEvents():
             running = False
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
-                pygame.event.post(pygame.event.Event(pygame.QUIT))
-    
+                send_quit_event()
+
+def send_quit_event():
+    pygame.event.post(pygame.event.Event(pygame.QUIT))
+   
 # check if we are main....
+
+profiler = None
+def checkProfiler():
+    return
+    logging.critical("############################# PROFILER IS PROFILING !!!!!!!! ######################################")
+    global profiler
+    if not profiler:
+        import cProfile
+        import threading
+        thread_quit = threading.Timer(10, send_quit_event)
+        thread_quit.setDaemon(True)
+        thread_quit.start()
+        profiler = cProfile.Profile()
+        profiler.enable()
+    else:
+        profiler.disable()
+        import pstats
+        pstats.Stats(profiler).strip_dirs().sort_stats("time").print_stats(20)
+
+
 if __name__ == '__main__':
+    checkProfiler()
     main()
+    checkProfiler()
+        

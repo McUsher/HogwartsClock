@@ -1,16 +1,16 @@
 {
     "font": "spleen-16x32_mod.bdf",
-    "updateTemp": -1,
+    "updateTemp": 10,
     "displayString": "{h}:{m}  {temp}°",
     "displayStringX": "Hogwarts: {h}:{m}Uhr, Quidditch Feld: {temp}°",
     "ani": {
         "possible_types": "still,run,explode",
         "type": "explode",
         "speed": 5,
-        "wait": 20,
-        "fps": 12
+        "wait": 10,
+        "fps": 10
     },
-    "loglevel": "30",
+    "loglevel": 30,
     "showFPS": 0,
     "restart": 0
 }
