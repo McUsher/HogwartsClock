@@ -13,6 +13,7 @@ class ThingspeakData():
         self.api_key = None
         self.channel_id = None
         self.field_id = None
+        self.max_data_age = None
         self.update_time_seconds = 0
     
     def update(self, json):
@@ -21,12 +22,16 @@ class ThingspeakData():
             self.channel_id = json["channelID"]
             self.field_id = json["fieldID"]
             self.update_time_seconds = 60 * json["updateMinutes"]
+            self.max_data_age = 60 * json["maxDataAgeMinutes"]
         except Exception as e:
             logging.error(f"could not parse json, {e}")
             self.__setDefault()
 
     def get_channel(self):
         return thingspeak.Channel(api_key=self.api_key, timeout=10, id=self.channel_id)
+    
+    def __str__(self):
+        return f"ThingSpeakData(field={self.field_id},update_time={self.update_time_seconds}, max_data_age={self.max_data_age}, api_key={self.api_key}, channel_id={self.channel_id})"
         
 
 class ThingSpeakRetriever():
@@ -40,6 +45,7 @@ class ThingSpeakRetriever():
         
     def update_data(self, json):
         self.data.update(json)
+        logging.info(self.data)
         self.channel = self.data.get_channel()
         self.current_value = "-"
         self.update_time_seconds = self.data.update_time_seconds
@@ -56,14 +62,15 @@ class ThingSpeakRetriever():
             """ first check, if the data is recent...."""
             result = self.channel.get_last_data_age(self.data.field_id)
             last_update = eval(result)
-            print(last_update)
+            logging.info(last_update)
             if(last_update["last_data_age_units"] != "s"):
                 """ last data age units is not seconds... cannot parse..."""
                 self.__set_value(None, errorCode=1)
                 self.__start_update_timer()
                 return
-            if(int(last_update["last_data_age"]) > 30 * 60):
+            if(int(last_update["last_data_age"]) > self.data.max_data_age):
                 """ last data is too old... """
+                logging.warn(f"data too old -> {last_update}")
                 self.__set_value(None, errorCode=2)
                 self.__start_update_timer()
                 return

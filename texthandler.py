@@ -73,9 +73,9 @@ class TextHandler():
             if("showFPS" in vals):
                 self.showFPS = vals["showFPS"] == 1
                 self.fontFPS = font.Font(os.path.join(self.fontpath,"spleen-5x8.bdf"), 8)
+            logging.info("new text config={}".format(self.displayString))
             logging.getLogger().setLevel(vals["loglevel"])
             logging.critical("LogLevel set to {}, showFPS={}".format(vals["loglevel"], self.showFPS))
-            logging.info("new text config={}".format(self.displayString))
         except Exception as e:
             logging.critical("Could not read config file {} - setting defaults".format(self.file))
             logging.critical("Exeption was: {}".format(e))

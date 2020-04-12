@@ -1,6 +1,5 @@
 {
     "font": "spleen-16x32_mod.bdf",
-    "updateTemp": 10,
     "displayString": "{h}:{m}  {val}°",
     "displayStringX": "Hogwarts: {h}:{m}Uhr, Quidditch Feld: {val}°",
     "ani": {
@@ -15,6 +14,7 @@
         "channelID":938251,
         "fieldID": 3,
         "updateMinutes": 10,
+        "maxDataAgeMinutes":30,
         "commentTime":"set updateTime to 0 for no thingspeak retrieval",
         "commentVal":"referenc in display string as 'val'"
     },
