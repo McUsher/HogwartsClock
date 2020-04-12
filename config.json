@@ -1,14 +1,22 @@
 {
     "font": "spleen-16x32_mod.bdf",
     "updateTemp": 10,
-    "displayString": "{h}:{m}  {temp}°",
-    "displayStringX": "Hogwarts: {h}:{m}Uhr, Quidditch Feld: {temp}°",
+    "displayString": "{h}:{m}  {val}°",
+    "displayStringX": "Hogwarts: {h}:{m}Uhr, Quidditch Feld: {val}°",
     "ani": {
         "possible_types": "still,run,explode",
         "type": "explode",
         "speed": 5,
         "wait": 10,
         "fps": 10
+    },
+    "thingspeak": {
+        "apiKey": "9CVMW3DUPBI66IYE",
+        "channelID":938251,
+        "fieldID": 3,
+        "updateMinutes": 10,
+        "commentTime":"set updateTime to 0 for no thingspeak retrieval",
+        "commentVal":"referenc in display string as 'val'"
     },
     "loglevel": 30,
     "showFPS": 0,

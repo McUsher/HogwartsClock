@@ -25,8 +25,9 @@ class TextHandler():
         hours = time.strftime("%H")
         minutes = time.strftime("%M")
         try:
-            txt = self.displayString.format(h=hours, m=minutes, temp=self.thingspeakRetriever.currentTemp)
-        except:
+            txt = self.displayString.format(h=hours, m=minutes, val=self.thingspeakRetriever.current_value)
+        except Exception as e:
+            logging.error(f"parsing error: {e}")
             txt = "ParsingError"
         logging.debug("Rendering text:{}".format(txt))
         return self.currentFont.render(txt, True, (255,255,255), (0,0,0))
@@ -68,7 +69,7 @@ class TextHandler():
             self.displayString = vals["displayString"]
             self.aniprops.update(vals["ani"])
             self.currentFont = self.__getFont(vals["font"])
-            self.thingspeakRetriever.set_update_time(vals["updateTemp"])
+            self.thingspeakRetriever.update_data(vals["thingspeak"])
             if("showFPS" in vals):
                 self.showFPS = vals["showFPS"] == 1
                 self.fontFPS = font.Font(os.path.join(self.fontpath,"spleen-5x8.bdf"), 8)
@@ -80,7 +81,7 @@ class TextHandler():
             logging.critical("Exeption was: {}".format(e))
             self.displayString = "{h}:{m} {temp}°"
             self.aniprops.setDefault()
-            self.thingspeakRetriever.set_update_time(0)
+            self.thingspeakRetriever.update_data(None)
             self.currentFont = self.__getFont()
         finally:
             self.__setRecheck()
