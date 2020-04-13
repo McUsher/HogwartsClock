@@ -2,7 +2,7 @@ import thingspeak
 import threading
 import logging
 
-DEBUG_TEMP = 88
+DEBUG_TEMP = -12
 
 class ThingspeakData():
 
@@ -41,13 +41,13 @@ class ThingSpeakRetriever():
     def __init__(self):
         self.data = ThingspeakData()
         self.update_time_seconds = 0
-        self.current_value = "-"
+        self.current_value_string = "-"
         
     def update_data(self, json):
         self.data.update(json)
         logging.info(self.data)
         self.channel = self.data.get_channel()
-        self.current_value = "-"
+        self.current_value_string = "-"
         self.update_time_seconds = self.data.update_time_seconds
         if(self.update_time_seconds <= 0):
             logging.warn("Warning! No temperature will be received... set update_time_seconds > 0")
@@ -91,10 +91,11 @@ class ThingSpeakRetriever():
             thread.start()
 
     def __set_value(self, temperature, errorCode=0):
+        self.current_value = temperature if temperature else 0
         if(errorCode > 0):
-            self.current_value = "E{}".format(errorCode)
+            self.current_value_string = "E{}".format(errorCode)
         elif(temperature is None):
-            self.current_value = "-"
+            self.current_value_string = "-"
         else:
-            self.current_value = "{}".format(int(round(temperature, 0)))
-        logging.info(f"CurrentValue.set={self.current_value}")
+            self.current_value_string = "{}".format(int(round(temperature, 0)))
+        logging.info(f"CurrentValue.set={self.current_value_string}")

@@ -25,7 +25,8 @@ class TextHandler():
         hours = time.strftime("%H")
         minutes = time.strftime("%M")
         try:
-            txt = self.displayString.format(h=hours, m=minutes, val=self.thingspeakRetriever.current_value)
+            dynSep = " " if self.thingspeakRetriever.current_value < -9 else "  "
+            txt = self.displayString.format(h=hours, m=minutes, dynSep=dynSep, val=self.thingspeakRetriever.current_value_string)
         except Exception as e:
             logging.error(f"parsing error: {e}")
             txt = "ParsingError"

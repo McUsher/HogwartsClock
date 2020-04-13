@@ -1,6 +1,6 @@
 {
     "font": "spleen-16x32_mod2.bdf",
-    "displayString": "{h}:{m}  {val}°",
+    "displayString": "{h}:{m}{dynSep}{val}°",
     "displayStringX": "Hogwarts: {h}:{m}Uhr, Quidditch Feld: {val}°",
     "ani": {
         "possible_types": "still,run,explode,rain",
