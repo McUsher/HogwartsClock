@@ -1,13 +1,13 @@
 {
-    "font": "spleen-16x32_mod.bdf",
+    "font": "spleen-16x32_mod2.bdf",
     "displayString": "{h}:{m}  {val}°",
     "displayStringX": "Hogwarts: {h}:{m}Uhr, Quidditch Feld: {val}°",
     "ani": {
-        "possible_types": "still,run,explode",
-        "type": "explode",
-        "speed": 5,
+        "possible_types": "still,run,explode,rain",
+        "type": "rain",
+        "speed": 3,
         "wait": 10,
-        "fps": 10
+        "fps": 120
     },
     "thingspeak": {
         "apiKey": "9CVMW3DUPBI66IYE",

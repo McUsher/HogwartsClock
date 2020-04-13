@@ -12,7 +12,8 @@ white = (255,255,255)  # @UnusedVariable
 TYPE_STILL = "still"
 TYPE_RUN = "run"
 TYPE_EXPLODE = "explode"
-TYPES = [TYPE_STILL, TYPE_RUN, TYPE_EXPLODE]
+TYPE_RAIN = "rain"
+TYPES = [TYPE_STILL, TYPE_RUN, TYPE_EXPLODE, TYPE_RAIN]
 
 COR = 1 #  1+ correction for 10 digit display (2digit temp) fits perfect
 
@@ -66,7 +67,22 @@ class Animation:
         self.text = text
         self.textRect = text.get_rect()
         self.center_text()
-
+        
+    def getPixels(self):
+        t = Timelog("Pixel analysis")
+        #analyse the text
+        pixels = []
+        ref = self.ref if self.ref else Vector(self.clock_rect.centerx,self.clock_rect.centery)
+        first = True
+        for x in range(self.textRect.width):
+            for y in range(self.textRect.height):
+                v = self.text.get_at((x,y))
+                if(v == white):
+                    pixels.append(Pix(self.textRect.x+x, self.textRect.y+y, ref, first))
+                    first = False
+        t.out(f"done, pixelcount={len(pixels)}")
+        return pixels
+    
     def get_fps(self):
         return self.aniprops.fps
     
@@ -76,7 +92,6 @@ class Animation:
         # vertical center
         self.textRect.y = self.clock_rect.y + int((self.clock_rect.height - self.textRect.height)/2)
         
-
 class StillAni(Animation):
     
     def __init__(self, screen, aniprops):
@@ -91,7 +106,6 @@ class StillAni(Animation):
         self.clear()
         self.timeUpdate = time.time()+10
         
-
 class RunningAni(Animation):
 
     def __init__(self, screen, aniprops):
@@ -106,13 +120,12 @@ class RunningAni(Animation):
         super().start(text)
         # horizontal center
         self.textRect.x = self.clock_rect.right
-
+    
 class ExplodeAni(Animation):
     
     def __init__(self, screen, aniprops, ref):
         super().__init__(screen, aniprops)
         self.ref = Vector(ref)
-        self.stillTime = 2
         self.wait_until = 0
         self.fac_gen = FactorGenerator()
         self.__update_steps()
@@ -122,18 +135,7 @@ class ExplodeAni(Animation):
         if(self.aniprops.updated):
             self.aniprops.updated = False
             self.__update_steps()
-        t = Timelog("1")
-        self.pixels = []
-        #analyse the text
-        ref = self.ref if self.ref else Vector(self.clock_rect.centerx,self.clock_rect.centery)
-        first = True
-        for x in range(self.textRect.width):
-            for y in range(self.textRect.height):
-                v = self.text.get_at((x,y))
-                if(v == white):
-                    self.pixels.append(Pix(self.textRect.x+x, self.textRect.y+y, ref, first))
-                    first = False
-        t.out(f"done analyse, pixelcount={len(self.pixels)}")
+        self.pixels = super().getPixels()
         self.step = -1
         self.done = False
         #print(f"first=",self.pixels[0])
@@ -154,7 +156,40 @@ class ExplodeAni(Animation):
 
     def __update_steps(self):
         self.steps =  self.fac_gen.get(time=self.aniprops.speed, fps=self.aniprops.fps)
+
+class RainAni(Animation):
+    
+    def __init__(self, screen, aniprops, ref):
+        super().__init__(screen, aniprops)
+        self.ref = Vector(ref)
+        self.wait_until = 0
         
+    def start(self, text):
+        super().start(text)
+        self.pixels = super().getPixels()
+        self.doneRain = False
+        spdFac = self.aniprops.speed / self.aniprops.fps * 5
+        for p in self.pixels:
+            rnd = spdFac+random.random()*spdFac 
+            p.add_rain_props(self.clock_rect.y-random.random()*50, self.clock_rect.bottom, rnd)
+        self.done = False
+        #print(f"start!!, first=",self.pixels[0])
+
+    def update(self):
+        if not self.doneRain:
+            super().clear()
+            self.doneRain = True
+            for p in self.pixels:
+                p.drawRain(self.screen)
+                self.doneRain = self.doneRain and p.done
+            self.wait_until = time.time() + self.aniprops.wait
+        else:
+            # sit and wait...
+            self.done = self.wait_until < time.time()
+
+    def __update_steps(self):
+        self.steps =  self.fac_gen.get(time=self.aniprops.speed, fps=self.aniprops.fps)
+
 class Pix:
     """
     BE CAREFUL this is a very CPU intensive Task, espiacially on an Raspberry Pi Zero
@@ -173,6 +208,15 @@ class Pix:
         self.shrinkY = vecY * speedShrink
         self.debug = debug
         
+    def add_rain_props(self, startY, bottomY, velocity):
+        self.curY = int(startY)
+        self.botY = self.orgY
+        self.bottomY = bottomY
+        self.velocity = velocity
+        self.doneOrg = False
+        self.doneBot = False
+        self.done = False
+           
     def debug(self, text):
         if(self.debug):
             print(text)
@@ -184,10 +228,28 @@ class Pix:
         else:
             return (int(self.orgX + self.growX * fac),
                     int(self.orgY + self.growY * fac))
-    
+
+    def drawRain(self, screen):
+        if self.done:
+            screen.set_at((self.orgX, self.orgY), white)
+            return
+        self.curY += self.velocity
+        if self.curY >= self.orgY:
+            screen.set_at((self.orgX, int(self.orgY)), white)
+            self.doneOrg = True
+        else:
+            screen.set_at((self.orgX, int(self.curY)), white)
+            
+        if self.botY >= self.bottomY:
+            self.doneBot = True
+        else:
+            self.botY += self.velocity
+            screen.set_at((self.orgX, int(self.botY)), white)
+        self.done = self.doneOrg and self.doneBot
+        
     def __str__(self):
         deb = 'DEB' if self.debug else '-'
-        return f"Vector(org={self.orgX}/{self.orgY} {deb})"
+        return f"Pix(org={self.orgX}/{self.orgY}, curY={self.curY} b={self.bottomY}, v={self.velocity} {deb})"
     
 class FactorGenerator():
     def __init__(self):
