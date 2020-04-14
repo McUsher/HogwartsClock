@@ -6,19 +6,20 @@
         "possible_types": "still,run,explode,rain",
         "type": "rain",
         "speed": 3,
-        "wait": 10,
-        "fps": 120
+        "wait": 5,
+        "fps": 18
     },
     "thingspeak": {
         "apiKey": "9CVMW3DUPBI66IYE",
-        "channelID":938251,
+        "channelID": 938251,
         "fieldID": 3,
         "updateMinutes": 10,
-        "maxDataAgeMinutes":30,
-        "commentTime":"set updateTime to 0 for no thingspeak retrieval",
-        "commentVal":"referenc in display string as 'val'"
+        "maxDataAgeMinutes": 30,
+        "commentTime": "set updateTime to 0 for no thingspeak retrieval",
+        "commentVal": "referenc in display string as 'val'"
     },
-    "loglevel": 30,
+    "recheckConfig": 20,
+    "loglevel": 20,
     "showFPS": 0,
     "restart": 0
 }

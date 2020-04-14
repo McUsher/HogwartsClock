@@ -48,13 +48,13 @@ class TextHandler():
         return use
 
     def __setRecheck(self):
-        thread = threading.Timer(config.CHECK_FILE_SECONDS, self.__check)
+        thread = threading.Timer(self.recheck_file_seconds , self.__check)
         thread.setDaemon(True)
         thread.start()
     
     def __check(self):
         modified = time.ctime(os.path.getmtime(self.file))
-        if self.lastFileMod and self.lastFileMod == modified:
+        if self.lastFileMod == modified:
             #logging.debug(" no change in text config file={}".format(self.file))
             self.__setRecheck()
             return
@@ -71,17 +71,21 @@ class TextHandler():
             self.aniprops.update(vals["ani"])
             self.currentFont = self.__getFont(vals["font"])
             self.thingspeakRetriever.update_data(vals["thingspeak"])
+            self.recheck_file_seconds = vals["recheckConfig"]
+            if self.recheck_file_seconds < 10:
+                logging.warn("Time for recheck the config file is pretty low")
             if("showFPS" in vals):
                 self.showFPS = vals["showFPS"] == 1
                 self.fontFPS = font.Font(os.path.join(self.fontpath,"spleen-5x8.bdf"), 8)
             logging.info("new text config={}".format(self.displayString))
             logging.getLogger().setLevel(vals["loglevel"])
-            logging.critical("LogLevel set to {}, showFPS={}".format(vals["loglevel"], self.showFPS))
+            logging.info(f"LogLevel set to {vals['loglevel']}, showFPS={self.showFPS}, recheckConfigSeconds={self.recheck_file_seconds}")
         except Exception as e:
-            logging.critical("Could not read config file {} - setting defaults".format(self.file))
-            logging.critical("Exeption was: {}".format(e))
+            logging.critical(f"Could not read config file {self.file} - setting defaults")
+            logging.critical(f"Exeption was: {e}")
             self.displayString = "{h}:{m} {temp}°"
             self.aniprops.setDefault()
+            self.recheck_file_seconds = 5
             self.thingspeakRetriever.update_data(None)
             self.currentFont = self.__getFont()
         finally:
