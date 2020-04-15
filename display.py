@@ -3,7 +3,7 @@ import logging
 import os
 import time
 
-from pygame import font, draw
+from pygame import font
 from pygame.surface import Surface
 import config
 
@@ -11,6 +11,9 @@ import config
 path = os.path.dirname(os.path.abspath(__file__))
 fontpath = os.path.join(path, "fonts")
 print(f"fontpath={fontpath}")
+
+WHITE = (255,255,255)
+BLACK = (0,0,0)
 
 def getDefaultFont():
     return font.Font(os.path.join(fontpath, "spleen-16x32_mod.bdf"),32)
@@ -24,14 +27,23 @@ def getFont(font_name=None):
     logging.info("Font set to: {}".format(use))
     return use
 
+
+def powerTestImg():
+    size = (config.CLOCK_WIDTH, config.CLOCK_HEIGHT)
+    surface = Surface(size)
+    surface.fill(WHITE)
+    return surface
+
+
 class Displays(object):
     def __init__(self):
         self.standard = Standard()
         self.countdown = CountDown()
         self.do_standard = True
     
-    def setDefault(self):
-        self.standard.__setDefaults__()
+    def setDefault(self, debugText):
+        debugText = f"d:{debugText}"
+        self.standard.__setDefaults__(debugText)
         self.countdown.__setDefaults__()
         self.do_standard = True
     
@@ -41,7 +53,9 @@ class Displays(object):
     def update_countdown(self, json):
         self.countdown.__updateData__(json)
         
-    def render(self, val, val_str):
+    def render(self, val, val_str, doPowerTest):
+        if doPowerTest:
+            return powerTestImg()
         if not self.countdown.active:
             return self.standard.render(val, val_str)
         self.do_standard = not self.do_standard
@@ -72,9 +86,11 @@ class Standard(object):
         self.font = getFont(json["font"])
         self.display_string = json["displayString"]
     
-    def __setDefaults__(self):
+    def __setDefaults__(self, debugText = None):
         self.font = getDefaultFont()
         self.display_string = "{h}:{m} {temp}°"
+        if debugText:
+            self.display_string = debugText
 
 
 class CountDown(Standard):
@@ -85,13 +101,13 @@ class CountDown(Standard):
         txts = self.display_string.format(val=self.count).split("\n")
         logging.debug(f"countdown={txts}")
         if len(txts) == 1:
-            return self.font.render(txts[0], True, (255,255,255), (0,0,0))
+            return self.font.render(txts[0], True, WHITE, BLACK)
         """ we have a multiline text...."""
         fnts = []
         maxW = 0
         totH = 0
         for t in txts:
-            f = self.font.render(t, True, (255,255,255), (0,0,0))
+            f = self.font.render(t, True, WHITE, BLACK)
             r = f.get_rect()
             totH += r.height
             maxW = max(maxW, r.width)

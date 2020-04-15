@@ -21,7 +21,7 @@
         "apiKey": "9CVMW3DUPBI66IYE",
         "channelID": 938251,
         "fieldID": 3,
-        "updateMinutes": -1,
+        "updateMinutes": 10,
         "maxDataAgeMinutes": 30,
         "commentTime": "set updateTime to 0 for no thingspeak retrieval",
         "commentVal": "referenc in display string as 'val'"
@@ -29,5 +29,6 @@
     "recheckConfig": 20,
     "loglevel": 30,
     "showFPS": 0,
+    "powerTest" : 0,
     "restart": 0
 }

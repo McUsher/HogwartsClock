@@ -24,9 +24,9 @@ class AniProps:
         self.__setDefaults__()
         
     def __setDefaults__(self):
-        self.typ = TYPE_STILL
-        self.speed = 1
-        self.fps = 1
+        self.typ = TYPE_RUN
+        self.speed = 5
+        self.fps = 10
         self.wait = 1
         self.updated = False
         
