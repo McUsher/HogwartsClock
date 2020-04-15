@@ -9,8 +9,8 @@ from sys import version
 import pygame
 from pygame.constants import NOFRAME
 
-from animator import StillAni, RunningAni, ExplodeAni, RainAni
-from animator import TYPE_RUN, TYPE_EXPLODE, TYPE_STILL, TYPE_RAIN
+from animator import StillAni, RunningAni, ExplodeAni, RainAni, RainAniSplit
+from animator import TYPE_RUN, TYPE_EXPLODE, TYPE_STILL, TYPE_RAIN, TYPE_RAIN_SPLIT
 import config
 from texthandler import TextHandler
 
@@ -58,7 +58,8 @@ def main():
                     TYPE_STILL:     StillAni(screen, textHandler.aniprops),
                     TYPE_RUN:       RunningAni(screen, textHandler.aniprops),
                     TYPE_EXPLODE:   ExplodeAni(screen, textHandler.aniprops, config.REF_EXPLODE),
-                    TYPE_RAIN:      RainAni(screen, textHandler.aniprops, config.REF_EXPLODE),
+                    TYPE_RAIN:      RainAni(screen, textHandler.aniprops),
+                    TYPE_RAIN_SPLIT:RainAniSplit(screen, textHandler.aniprops)
                 }
             animation = animations.get(textHandler.aniprops.typ)
             animation.clock_rect = clock_rect

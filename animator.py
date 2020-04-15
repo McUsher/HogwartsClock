@@ -13,7 +13,8 @@ TYPE_STILL = "still"
 TYPE_RUN = "run"
 TYPE_EXPLODE = "explode"
 TYPE_RAIN = "rain"
-TYPES = [TYPE_STILL, TYPE_RUN, TYPE_EXPLODE, TYPE_RAIN]
+TYPE_RAIN_SPLIT = "rain2"
+TYPES = [TYPE_STILL, TYPE_RUN, TYPE_EXPLODE, TYPE_RAIN, TYPE_RAIN_SPLIT]
 
 COR = 1 #  1+ correction for 10 digit display (2digit temp) fits perfect
 
@@ -59,6 +60,7 @@ class Animation:
         self.textRect = None
         self.clock_rect = None
         self.info = 0
+        self.ref = None
 
     def clear(self):
         draw.rect(self.screen,black,self.clock_rect)
@@ -159,9 +161,8 @@ class ExplodeAni(Animation):
 
 class RainAni(Animation):
     
-    def __init__(self, screen, aniprops, ref):
+    def __init__(self, screen, aniprops):
         super().__init__(screen, aniprops)
-        self.ref = Vector(ref)
         self.wait_until = 0
         
     def start(self, text):
@@ -190,6 +191,36 @@ class RainAni(Animation):
     def __update_steps(self):
         self.steps =  self.fac_gen.get(time=self.aniprops.speed, fps=self.aniprops.fps)
 
+class RainAniSplit(RainAni):
+
+    def __init__(self, screen, aniprops):
+        super().__init__(screen, aniprops)
+    
+    def start(self, text):
+        super().start(text)
+        self.doneIn = False
+        self.doneWait = False
+        
+    def update(self):
+        if not self.doneIn:
+            super().clear()
+            self.doneIn = True
+            for p in self.pixels:
+                p.drawRainIn(self.screen)
+                self.doneIn = self.doneIn and p.done
+            if self.doneIn:
+                self.wait_until = time.time() + self.aniprops.wait
+                for p in self.pixels:
+                    p.done = False
+        elif not self.doneWait:
+            # sit and wait...
+            self.doneWait = self.wait_until < time.time()
+        else:
+            super().clear()
+            self.done = True
+            for p in self.pixels:
+                p.drawRainOut(self.screen)
+                self.done = self.done and p.done
 class Pix:
     """
     BE CAREFUL this is a very CPU intensive Task, espiacially on an Raspberry Pi Zero
@@ -213,8 +244,6 @@ class Pix:
         self.botY = self.orgY
         self.bottomY = bottomY
         self.velocity = velocity
-        self.doneOrg = False
-        self.doneBot = False
         self.done = False
            
     def debug(self, text):
@@ -236,17 +265,35 @@ class Pix:
         self.curY += self.velocity
         if self.curY >= self.orgY:
             screen.set_at((self.orgX, int(self.orgY)), white)
-            self.doneOrg = True
+            self.doneIn = True
         else:
             screen.set_at((self.orgX, int(self.curY)), white)
             
         if self.botY >= self.bottomY:
-            self.doneBot = True
+            self.doneOut = True
         else:
             self.botY += self.velocity
             screen.set_at((self.orgX, int(self.botY)), white)
-        self.done = self.doneOrg and self.doneBot
+        self.done = self.doneIn and self.doneOut
         
+    def drawRainIn(self, screen):
+        if self.done:
+            screen.set_at((self.orgX, self.orgY), white)
+            return
+        self.curY += self.velocity
+        if self.curY >= self.orgY:
+            self.curY = self.orgY
+            self.done = True
+        screen.set_at((self.orgX, int(self.curY)), white)
+        
+    def drawRainOut(self, screen):
+        if self.done:
+            return
+        self.curY += self.velocity
+        if self.curY > self.bottomY:
+            self.done = True
+        screen.set_at((self.orgX, int(self.curY)), white)
+
     def __str__(self):
         deb = 'DEB' if self.debug else '-'
         return f"Pix(org={self.orgX}/{self.orgY}, curY={self.curY} b={self.bottomY}, v={self.velocity} {deb})"

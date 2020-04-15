@@ -11,8 +11,8 @@
     	"active" : 1
     },
     "ani": {
-        "possible_types": "still,run,explode,rain",
-        "type": "rain",
+        "possible_types": "still,run,explode,rain,rain2",
+        "type": "rain2",
         "speed": 3,
         "wait": 5,
         "fps": 18
